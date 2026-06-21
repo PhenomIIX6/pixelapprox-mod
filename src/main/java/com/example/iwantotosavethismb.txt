@@ -1,0 +1,83 @@
+package com.example;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import com.mojang.blaze3d.platform.NativeImage;
+
+import java.awt.image.BufferedImage;
+import java.lang.reflect.Field;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.block.dispatch.BlockStateModel;
+import net.minecraft.client.resources.model.ModelManager;
+import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.client.resources.model.geometry.BakedQuad;
+import net.minecraft.client.resources.model.geometry.BakedQuad.MaterialInfo;
+import net.minecraft.client.renderer.block.dispatch.BlockStateModelPart;
+import net.minecraft.client.renderer.texture.SpriteContents;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.client.renderer.block.BlockStateModelSet;
+
+public class MyBlockFactory {
+    public static MyBlock blockFactory(Block block) throws IllegalAccessException, NoSuchFieldException {
+        BufferedImage img = textureExtract(block);
+        C3 color = colorExtract(img);
+        return new MyBlock(block, color);
+    }
+
+    private static C3 colorExtract(BufferedImage img) {
+        return ImageUtils.getMeanColor(img);
+    }
+
+    private static BufferedImage textureExtract(Block block) throws IllegalAccessException, NoSuchFieldException {
+        // Get BlockStateModel
+        ModelManager modelManager = Minecraft.getInstance().getModelManager();
+        BlockStateModelSet blockStateModelSet = modelManager.getBlockStateModelSet();
+        BlockState blockState = block.defaultBlockState();
+        BlockStateModel blockStateModel = blockStateModelSet.get(blockState);
+        
+        // Get BlockStateModelPart
+        List<BlockStateModelPart> modelParts = new ArrayList<BlockStateModelPart>();
+        blockStateModel.collectParts(RandomSource.create(), modelParts);
+        
+        // Get first part
+        BlockStateModelPart firstModelPart = modelParts.get(0);
+
+        // Get quads
+        List<BakedQuad> bakedQuads = firstModelPart.getQuads(Direction.NORTH);
+
+        // Get first BakedQuad
+        BakedQuad firstBakedQuad = bakedQuads.get(0);
+
+        // Get MaterialInfo
+        MaterialInfo materialInfo = firstBakedQuad.materialInfo();
+
+        // Get TextureAtlasSprite
+        TextureAtlasSprite textureAtlasSprite = materialInfo.sprite();
+
+        // Get SpriteContents
+        SpriteContents spriteContents = textureAtlasSprite.contents();
+        
+        // Get originalImage field using reflection
+        Field field = SpriteContents.class.getDeclaredField("originalImage");
+        field.setAccessible(true); 
+        NativeImage nativeImage = (NativeImage) field.get(spriteContents);
+        
+        int w = nativeImage.getWidth();
+        int h = nativeImage.getHeight();
+        BufferedImage result = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+                int argb = nativeImage.getPixel(x, y);
+                result.setRGB(x, y, argb);
+            }
+        }
+        return result;
+    }
+}
