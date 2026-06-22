@@ -9,13 +9,9 @@ import java.util.Arrays;
 import javax.imageio.ImageIO;
 
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-
 
 public class PixelApproximator {	
-    private static volatile PixelApproximator instance;
-
-    private ArrayList<MyBlock> myBlocks = new ArrayList<MyBlock>(Arrays.asList(
+    private static final ArrayList<MyBlock> myBlocks = new ArrayList<MyBlock>(Arrays.asList(
         MyBlocks.BLACK_CONCRETE,
         MyBlocks.BLACK_CONCRETE_POWDER,
         MyBlocks.BLACK_TERRACOTTA,
@@ -67,43 +63,22 @@ public class PixelApproximator {
         MyBlocks.YELLOW_TERRACOTTA
     ));
 
-    private Dither dither;
-
-    private PixelApproximator() throws IOException, IllegalAccessException, NoSuchFieldException {
-        C3[] palette = myBlocks.stream().map(MyBlock::getColor).toArray(C3[]::new);
-        this.dither = new Dither(palette);
-    }
-	
-    public static PixelApproximator getInstance() throws IOException, IllegalAccessException, NoSuchFieldException {
-		PixelApproximator localInstance = instance;
-		if (localInstance == null) {
-			synchronized (PixelApproximator.class) {
-				localInstance = instance;
-				if (localInstance == null) {
-					instance = localInstance = new PixelApproximator();
-				}
-			}
-		}
-		return localInstance;
-    }
-
-    public Block[][] imageToBlocks(BufferedImage img) {
+    public static Block[][] imageToBlocks(BufferedImage img) {
         int w = img.getWidth();
         int h = img.getHeight();
         
         Block[][] blocks = new Block[w][h];
 
-        int[][] idxs = dither.floydSteinbergDithering(img);
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
-                int idx = idxs[y][x];
-                blocks[x][y] = myBlocks.get(idx).getBlock();
+                C3 color = ImageUtils.getPixelColor(img, x, y);
+                blocks[x][y] = ClosestFinder.findClosestMyBlock(color, myBlocks).getBlock();
             }
         }
         return blocks;
     }
 
-    public Block[][] imageToBlocks(String imgPath) throws IOException {
+    public static Block[][] imageToBlocks(String imgPath) throws IOException {
         BufferedImage img = ImageIO.read(new File(imgPath));
         return imageToBlocks(img);
     }

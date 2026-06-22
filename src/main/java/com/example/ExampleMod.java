@@ -120,18 +120,8 @@ public class ExampleMod implements ModInitializer {
 			img = ImageUtils.scaleImage(img, width, height);
 		}
 		
-		// Load PixelApproximator
-		PixelApproximator pa;
-		try {
-			pa = PixelApproximator.getInstance();
-		}
-		catch (Exception e) {
-			LOGGER.info(e.getMessage());
-			return -1;
-		}
-		
 		// Get array of blocks
-		Block[][] blocks = pa.imageToBlocks(img);
+		Block[][] blocks = PixelApproximator.imageToBlocks(img);
 		
 		// Blocks place
 		int w = img.getWidth();

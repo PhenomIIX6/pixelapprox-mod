@@ -6,28 +6,12 @@ import java.awt.image.BufferedImage;
 
 public class ImageUtils {
     
-    private static C3 getPixelColor(BufferedImage img, int x, int y) {
+    public static C3 getPixelColor(BufferedImage img, int x, int y) {
         int color = img.getRGB(x, y);
         int blue = color & 0xff;
         int green = (color & 0xff00) >> 8;
         int red = (color & 0xff0000) >> 16;
-        
-        return new C3(red, green, blue);
-    }
-
-    public static C3 getMeanColor(BufferedImage img) {
-        int w = img.getWidth();
-        int h = img.getHeight();
-        
-        C3 meanRGB = new C3(0, 0, 0);
-        for (int y = 0; y < h; y++) {
-            for (int x = 0; x < h; x++) {
-                C3 target = getPixelColor(img, x, y);
-                meanRGB.add(target);
-            }
-        }
-        meanRGB.div(w * h);
-        return meanRGB;
+        return RGBToLabConverter.rgbToLab(red, green, blue);
     }
     
     public static BufferedImage scaleImage(BufferedImage img, int dWidth, int dHeight) {
